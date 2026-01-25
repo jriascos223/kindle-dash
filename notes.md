@@ -8,12 +8,19 @@ tar -xf arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-linux-gnueabihf.tar.xz
 ```
 
 ```bash
-./configure --host=arm-none-linux-gnueabihf \ 
-CC="$TOOLCHAIN_PATH/arm-none-linux-gnueabihf-gcc" \ 
-  --disable-openssl \                     
+cd ~/workspace/kindle-bin/rsync
+
+# Set the path to your new toolchain
+TOOLCHAIN_PATH=~/workspace/arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-linux-gnueabihf/bin
+
+./configure --host=arm-none-linux-gnueabihf \
+  CC="$TOOLCHAIN_PATH/arm-none-linux-gnueabihf-gcc" \
+  --disable-openssl \
   --disable-xxhash \
   --disable-zstd \
   --disable-lz4
+
+make
 ```
 
 # Configure sample
