@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension>
+    <information>
+	<name>kindle-dash</name>
+	<id>kindle-dash</id>
+	<version>1.1</version>
+	<author>Jorsc</author>
+    </information>
+    <menus>
+	<menu type="json" dynamic="true">menu.json</menu>
+    </menus>
+</extension>

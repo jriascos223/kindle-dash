@@ -1,0 +1,5 @@
+{
+        "items": [
+                {"name": "kindle-dash", "action": "bash /mnt/us/kindle-dash/dash.sh"}
+        ]
+}
