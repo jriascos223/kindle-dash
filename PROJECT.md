@@ -47,15 +47,89 @@ LuaJIT's FFI is used to call C libraries directly from Lua without writing C wra
 
 ### FBInk
 
-[FBInk](https://github.com/NiLuJe/FBInk) is the primary display library. It provides direct framebuffer access optimized for e-ink controllers (waveform modes, hardware dithering, partial/full refresh). The FFI bindings in `ffi/fbink_h.lua` expose:
+[FBInk](https://github.com/NiLuJe/FBInk) ("FrameBuffer eInker") is the primary display library. It abstracts e-ink display controllers (i.MX EPDC, MTK, sunxi) and provides framebuffer rendering optimized for e-ink (waveform mode selection, hardware dithering, partial/full refresh). Licensed GPLv3+.
 
-- Screen clearing, text printing (bitmap fonts at configurable sizes)
-- Image rendering (`fbink_print_image`, `fbink_print_raw_data`)
-- Progress/activity bars
-- Region dumps and restores
-- Device state queries (screen dimensions, DPI, device name)
+Building FBInk produces two artifacts:
+- **`fbink`** — standalone CLI binary for shell-level screen operations
+- **`libfbink.so`** — shared C library consumed via FFI from Lua
 
-The project loads `libfbink.so` at runtime, searching local `libs/`, KOReader's libs, and system paths.
+#### FBInk is a runtime dependency, not vendored
+
+FBInk source is **not** checked into this repo. There is no git submodule, no build step in the Makefile, and no pre-built binaries committed. The project discovers FBInk at runtime through fallback search paths, or you cross-compile and bundle it yourself.
+
+#### Two components, two search strategies
+
+**1. `fbink` CLI binary** — used by `dash.sh` for status messages during startup (before LuaJIT is running):
+
+```
+dash.sh:find_fbink() search order:
+  /var/tmp/fbink                ← runtime copy on tmpfs (made at startup)
+  /mnt/us/kindle-dash/fbink     ← bundled with the app
+  /mnt/us/koreader/fbink        ← from KOReader installation
+  /mnt/us/libkh/bin/fbink       ← from libkh helper package
+  /usr/bin/fbink                ← system install
+```
+
+If a local copy exists at `${DASH_DIR}/fbink`, `dash.sh` copies it to `/var/tmp/fbink` at startup to avoid vfat+fuse filesystem issues.
+
+**2. `libfbink.so` shared library** — loaded by `dash.lua` via LuaJIT FFI in two stages:
+
+```
+Stage 1 — dynamic linker (relies on LD_LIBRARY_PATH set by dash.sh):
+  ffi.load("fbink")
+  LD_LIBRARY_PATH = /mnt/us/kindle-dash/libs:/mnt/us/koreader/libs:...
+
+Stage 2 — explicit path fallback (if Stage 1 fails):
+  /mnt/us/koreader/libs/libfbink.so
+  /mnt/us/libfbink.so
+  /usr/lib/libfbink.so
+  → fatal error if none found
+```
+
+#### FFI bindings (`ffi/fbink_h.lua`)
+
+This file is copied from [lua-fbink](https://github.com/NiLuJe/lua-fbink). It is a manual transcription of FBInk's C header (`fbink.h`) into LuaJIT `ffi.cdef` declarations — no higher-level wrapping. Lua code calls the C API directly.
+
+It declares:
+- **Structs**: `FBInkConfig` (rendering options), `FBInkState` (device info), `FBInkOTConfig` (OpenType fonts), `FBInkRect`, `FBInkDump`, `FBInkOTFit`
+- **Enums**: fonts (31 bitmap fonts), waveform modes, foreground/background grayscale colors, alignment, padding, dithering algorithms
+- **29 function signatures**: `fbink_open/close/init`, `fbink_print` (bitmap text), `fbink_print_ot` (OpenType text), `fbink_print_image/raw_data`, `fbink_cls` (clear), `fbink_refresh`, `fbink_wait_for_complete`, `fbink_dump/restore`, `fbink_print_progress_bar`, device state queries, and more
+
+If FBInk is upgraded to a version with API changes, update this file from the lua-fbink repo.
+
+#### Where FBInk files live on the Kindle
+
+```
+/mnt/us/kindle-dash/
+├── fbink              ← CLI binary (optional, you provide this)
+├── libs/
+│   └── libfbink.so    ← shared library (optional, you provide this)
+├── ffi/
+│   └── fbink_h.lua    ← FFI declarations (checked into this repo)
+└── ...
+
+/mnt/us/koreader/      ← fallback (if KOReader is installed)
+├── fbink
+└── libs/libfbink.so
+```
+
+#### Cross-compiling FBInk for Kindle
+
+To bundle FBInk for standalone deployment (without relying on KOReader):
+
+```bash
+git clone https://github.com/NiLuJe/FBInk
+cd FBInk
+make KINDLE=1 CC=arm-none-linux-gnueabihf-gcc
+```
+
+This produces `fbink` (CLI) and `libfbink.so`. Copy them to your deployment:
+- `fbink` → project root (or `dist/kindle-dash/`)
+- `libfbink.so` → `libs/` (or `dist/kindle-dash/libs/`)
+
+For older Kindle Firmware 2.x devices, add `LEGACY=1` to the make command.
+
+> **Note**: The Makefile does not currently copy a `libs/` directory or `fbink` binary into `dist/`. If you bundle these, you'll need to update the Makefile accordingly.
 
 ### KOReader Runtime Reuse
 
