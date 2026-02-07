@@ -8,6 +8,7 @@ EXTENSIONS_DIR = $(DIST_DIR)/extensions/kindle-dash
 # Core files to install
 DASH_FILES = dash.lua dash.sh setupkoenv.lua
 FFI_FILES = $(wildcard ffi/*.lua)
+LIB_FILES = $(wildcard libs/*.so)
 
 .PHONY: all clean install-package
 
@@ -23,6 +24,8 @@ install-package: clean
 	@chmod +x $(KINDLE_DASH_DIR)/dash.sh
 	@# FFI modules
 	@cp $(FFI_FILES) $(KINDLE_DASH_DIR)/ffi/
+	@# Native libraries
+	@if [ -n "$(LIB_FILES)" ]; then mkdir -p $(KINDLE_DASH_DIR)/libs && cp $(LIB_FILES) $(KINDLE_DASH_DIR)/libs/; fi
 	@# KUAL extension
 	@cp kual/config.xml kual/menu.json $(EXTENSIONS_DIR)/
 	@echo ""
