@@ -6,7 +6,7 @@ KINDLE_DASH_DIR = $(DIST_DIR)/kindle-dash
 EXTENSIONS_DIR = $(DIST_DIR)/extensions/kindle-dash
 
 # Core files to install
-DASH_FILES = dash.lua dash.sh setupkoenv.lua
+DASH_FILES = dash.lua dash.sh setupkoenv.lua input.lua grid.lua
 FFI_FILES = $(wildcard ffi/*.lua)
 LIB_FILES = $(wildcard libs/*.so)
 

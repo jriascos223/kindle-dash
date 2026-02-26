@@ -297,4 +297,34 @@ int fbink_region_dump(int, short int, short int, short unsigned int, short unsig
 int fbink_restore(int, const FBInkConfig *restrict, const FBInkDump *restrict);
 int fbink_free_dump_data(FBInkDump *restrict);
 int fbink_invert_screen(int, const FBInkConfig *restrict);
+int fbink_fill_rect_gray(int, const FBInkConfig *restrict, const FBInkRect *restrict, bool, uint8_t);
+]]
+
+-- POSIX I/O and Linux input event declarations for touch input
+ffi.cdef[[
+// POSIX file I/O
+int open(const char *pathname, int flags);
+int read(int fd, void *buf, size_t count);
+int close(int fd);
+
+// select() for event loop with timeout
+struct timeval {
+    long tv_sec;
+    long tv_usec;
+};
+
+typedef struct {
+    unsigned long fds_bits[32];
+} fd_set;
+
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+int gettimeofday(struct timeval *tv, void *tz);
+
+// Linux input event (from <linux/input.h>)
+struct input_event {
+    struct timeval time;
+    unsigned short type;
+    unsigned short code;
+    int value;
+};
 ]]
